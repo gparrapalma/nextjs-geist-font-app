@@ -1,0 +1,114 @@
+# .htaccess - Configuración de Apache para la aplicación de patentes vehiculares
+
+# Habilitar reescritura de URLs
+RewriteEngine On
+
+# Configuración de seguridad
+# Prevenir acceso a archivos sensibles
+<Files "db_config.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+<Files "config.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+<Files ".htaccess">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+<Files "*.sql">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Proteger directorio uploads (permitir solo imágenes)
+<Directory "uploads">
+    <Files "*">
+        Order Deny,Allow
+        Deny from all
+    </Files>
+    <FilesMatch "\.(jpg|jpeg|png|gif)$">
+        Order Allow,Deny
+        Allow from all
+    </FilesMatch>
+</Directory>
+
+# Headers de seguridad
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'"
+</IfModule>
+
+# Configuración de compresión
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+</IfModule>
+
+# Configuración de caché
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+</IfModule>
+
+# Configuración de límites de subida
+<IfModule mod_php.c>
+    php_value upload_max_filesize 5M
+    php_value post_max_size 6M
+    php_value max_execution_time 30
+    php_value max_input_time 30
+</IfModule>
+
+# Redirección a index.php si se accede al directorio raíz
+DirectoryIndex index.php
+
+# URLs amigables (opcional)
+# RewriteCond %{REQUEST_FILENAME} !-f
+# RewriteCond %{REQUEST_FILENAME} !-d
+# RewriteRule ^eventos/?$ view_events.php [L]
+# RewriteRule ^registro/?$ event_registration.php [L]
+
+# Prevenir acceso a directorios
+Options -Indexes
+
+# Configuración de tipos MIME
+<IfModule mod_mime.c>
+    AddType image/webp .webp
+</IfModule>
+
+# Protección contra inyección de código
+<IfModule mod_rewrite.c>
+    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} GLOBALS(=|[|%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} _REQUEST(=|[|%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} ^.*(\[|\]|\(|\)|<|>|ê|"|;|\?|\*|=$).* [NC,OR]
+    RewriteCond %{QUERY_STRING} ^.*("|'|<|>|\|{||).* [NC,OR]
+    RewriteCond %{QUERY_STRING} ^.*(%0|%A|%B|%C|%D|%E|%F|127\.0).* [NC,OR]
+    RewriteCond %{QUERY_STRING} ^.*(globals|encode|localhost|loopback).* [NC,OR]
+    RewriteCond %{QUERY_STRING} ^.*(request|select|insert|union|declare).* [NC]
+    RewriteRule ^(.*)$ - [F,L]
+</IfModule>
+
+# Configuración de errores personalizados
+ErrorDocument 403 /php-app/index.php
+ErrorDocument 404 /php-app/index.php
+ErrorDocument 500 /php-app/index.php
